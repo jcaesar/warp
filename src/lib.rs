@@ -141,7 +141,7 @@ pub use self::filters::{
     path::path,
     query,
     // query() function
-    query::query,
+    query::{ query, query_parse },
     sse,
 };
 // ws() function

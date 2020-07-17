@@ -7,7 +7,7 @@ use serde_urlencoded;
 use crate::filter::{filter_fn_one, Filter, One};
 use crate::reject::{self, Rejection};
 
-/// Creates a `Filter` that decodes query parameters to the type `T`.
+/// Creates a `Filter` that decodes query parameters to the type `T` using `serde_urldecode`.
 ///
 /// If cannot decode into a `T`, the request is rejected with a `400 Bad Request`.
 pub fn query<T: DeserializeOwned + Send + 'static>(
@@ -19,6 +19,26 @@ pub fn query<T: DeserializeOwned + Send + 'static>(
         });
 
         let query_encoded = serde_urlencoded::from_str(query_string).map_err(|e| {
+            log::debug!("failed to decode query string '{}': {:?}", query_string, e);
+            reject::invalid_query()
+        });
+        future::ready(query_encoded)
+    })
+}
+
+/// Creates a `Filter` that decodes query parameters to the type `T`.
+///
+/// If cannot decode into a `T`, the request is rejected with a `400 Bad Request`.
+pub fn query_parse<T: DeserializeOwned + Send + 'static, F: Fn(&str) -> Result<T, E> + Copy + 'static, E: std::fmt::Debug>(
+    parser: F,
+) -> impl Filter<Extract = One<T>, Error = Rejection> + Copy {
+    filter_fn_one(move |route| {
+        let query_string = route.query().unwrap_or_else(|| {
+            log::debug!("route was called without a query string, defaulting to empty");
+            ""
+        });
+
+        let query_encoded = parser(query_string).map_err(|e| {
             log::debug!("failed to decode query string '{}': {:?}", query_string, e);
             reject::invalid_query()
         });

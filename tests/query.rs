@@ -129,6 +129,26 @@ struct MyRequiredArgs {
 }
 
 #[tokio::test]
+async fn query_multi_struct() {
+    let as_struct = warp::query_parse::<MyRequiredMultiArg, _, _>(|s| serde_qs::from_str(s));
+
+    let req = warp::test::request().path("/?foo[]=something&foo[]=onemorething");
+
+    let extracted = req.filter(&as_struct).await.unwrap();
+    assert_eq!(
+        extracted,
+        MyRequiredMultiArg {
+            foo: vec!["something".to_string(), "onemorething".to_string()],
+        }
+    );
+}
+
+#[derive(Deserialize, Debug, Eq, PartialEq)]
+struct MyRequiredMultiArg {
+    foo: Vec<String>,
+}
+
+#[tokio::test]
 async fn raw_query() {
     let as_raw = warp::query::raw();
 

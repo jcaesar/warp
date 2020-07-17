@@ -45,6 +45,7 @@ serde_derive = "1.0"
 handlebars = "3.0.0"
 tokio = { version = "0.2", features = ["macros"] }
 listenfd = "0.3"
+serde_qs = "0.6.1"
 
 [features]
 default = ["multipart", "websocket"]
