@@ -143,6 +143,23 @@ async fn query_multi_struct() {
     );
 }
 
+#[tokio::test]
+async fn query_multi_struct_alt() {
+    let as_struct = warp::query::raw().and_then(|s: String|
+        futures::future::ready(serde_qs::from_str::<MyRequiredMultiArg>(&s).map_err(|_| warp::reject()))
+    );
+
+    let req = warp::test::request().path("/?foo[]=something&foo[]=onemorething");
+
+    let extracted = req.filter(&as_struct).await.unwrap();
+    assert_eq!(
+        extracted,
+        MyRequiredMultiArg {
+            foo: vec!["something".to_string(), "onemorething".to_string()],
+        }
+    );
+}
+
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 struct MyRequiredMultiArg {
     foo: Vec<String>,
